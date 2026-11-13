@@ -13,6 +13,7 @@
 #pragma once
 
 #include "Communications.hpp"
+#include "common/FrameRateCounter.h"
 #include "ipc/IpcServer.hpp"
 #include "serial_comm/SerialCommTypes.hpp"
 
@@ -69,6 +70,7 @@ private:
     std::mutex state_mutex_;
     Maintained state_;
     double send_rate_hz_;
+    FrameRateCounter send_fps_counter_{500};   // sendLoop 实际帧率（500 帧滑动窗口，500Hz 下约 1s）
 
     ipc::IpcServer ipc_server_;
     com::McuCommunication mcu_serial_;

@@ -23,6 +23,7 @@ endif()
 #                           及其使用示例；共享定义（serial_comm/SerialProtocol.hpp、
 #                           serial_comm/SerialCommTypes.hpp、ipc/IpcLayout.hpp）也放在
 #                           ipc_client/include，本工程反向引用这些文件
+#   src/serial_comm_server.cpp : 串口通信服务端可执行程序入口
 #   tools/                : 串口链路自检程序、IPC 服务端示例
 #   test/                 : 测试程序（pty 对建立真实串口链路、IPC 端到端测试）
 #
@@ -40,6 +41,8 @@ add_library(s2c SHARED
     src/com/McuDataPreprocessor.cpp
     src/ipc/IpcServer.cpp
     src/serial_comm/SerialCommServer.cpp
+    src/common/Debug/WatchdogFeed.cpp
+    src/common/FrameRateCounter.cpp
 )
 
 target_include_directories(s2c PUBLIC
@@ -76,6 +79,13 @@ target_compile_options(s2c_test_serial PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(s2c_ipc_server_demo tools/ipc_server_demo.cpp)
 target_link_libraries(s2c_ipc_server_demo PRIVATE s2c)
 target_compile_options(s2c_ipc_server_demo PRIVATE -Wall -Wextra -Wpedantic)
+
+# ---------------------------------------------------------------------------
+# 串口通信服务端（打开电控与 IMU 串口，500Hz 发送并发布完整快照）
+# ---------------------------------------------------------------------------
+add_executable(s2c_serial_comm_server src/serial_comm_server.cpp)
+target_link_libraries(s2c_serial_comm_server PRIVATE s2c)
+target_compile_options(s2c_serial_comm_server PRIVATE -Wall -Wextra -Wpedantic)
 
 # ---------------------------------------------------------------------------
 # 测试

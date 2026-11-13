@@ -9,3 +9,7 @@ __pycache__/
 # 工具中间结果
 .tmpdiag
 .run/
+
+# 运行日志（保留目录占位）
+logs/*
+!logs/.gitkeep

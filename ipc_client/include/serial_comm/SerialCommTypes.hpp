@@ -113,6 +113,7 @@ struct NavToVision {
 // 时间戳均为 steady_clock 时间点换算成的秒数（double）
 struct ServerInfo {
     double timestamp;                // 服务端当前时间戳
+    double send_rate_hz;             // sendLoop 实际帧率（Hz，滑动窗口统计）
     double last_mcu_receive_time;    // 上一次接收到电控消息的时间戳
     double last_imu_receive_time;    // 上一次接收到 IMU 消息的时间戳
     double last_vision_write_time;   // 上一次视觉写入的时间戳

@@ -358,6 +358,15 @@ int main() {
     S2C_CHECK(rate_hz > serial_comm::kSendRateHz - kFrequencyToleranceHz);
     S2C_CHECK(rate_hz < serial_comm::kSendRateHz + kFrequencyToleranceHz);
 
+    // 服务端统计的 sendLoop 实际帧率（滑动窗口）应在合理范围内
+    serial_comm::AllInfo fps_info{};
+    S2C_CHECK(waitFor([&] {
+        return vis_client.vis_get_all_info(fps_info)
+            && fps_info.server_info.send_rate_hz > 0.0;
+    }, std::chrono::milliseconds(2000)));
+    S2C_CHECK(fps_info.server_info.send_rate_hz > serial_comm::kSendRateHz - kFrequencyToleranceHz);
+    S2C_CHECK(fps_info.server_info.send_rate_hz < serial_comm::kSendRateHz + kFrequencyToleranceHz);
+
     // 电控与 IMU 数据: 写帧到 pty 主端
     const com::mcu::ReceivePacket mcu_sample = makeMcuSample();
     const com::imu::ReceivePacket imu_sample = makeImuSample();

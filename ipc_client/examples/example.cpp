@@ -112,8 +112,9 @@ void printInfo(const AllInfo& info) {
                 data.nav_to_vision.suggested_target_id,
                 static_cast<double>(data.nav_to_vision.suggested_big_yaw),
                 data.nav_to_vision.request_big_yaw_change);
-    std::printf("  server: now=%.3f mcu=%.3f imu=%.3f vis=%.3f nav=%.3f\n",
+    std::printf("  server: now=%.3f rate=%.1fHz mcu=%.3f imu=%.3f vis=%.3f nav=%.3f\n",
                 data.server_info.timestamp,
+                data.server_info.send_rate_hz,
                 data.server_info.last_mcu_receive_time,
                 data.server_info.last_imu_receive_time,
                 data.server_info.last_vision_write_time,

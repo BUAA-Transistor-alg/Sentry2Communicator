@@ -1,5 +1,7 @@
 #include "serial_comm/SerialCommServer.hpp"
 
+#include "common/Debug/WatchdogFeed.h"
+
 #include <chrono>
 #include <cstring>
 #include <stdexcept>
@@ -119,6 +121,7 @@ void SerialCommServer::sendLoop() {
             info.vis_to_nav = state_.vis_to_nav;
             info.nav_to_vision = state_.nav_to_vision;
             info.server_info.timestamp = steadySeconds(std::chrono::steady_clock::now());
+            info.server_info.send_rate_hz = send_fps_counter_.fps();
             info.server_info.last_mcu_receive_time = state_.last_mcu_receive_time;
             info.server_info.last_imu_receive_time = state_.last_imu_receive_time;
             info.server_info.last_vision_write_time = state_.last_vision_write_time;
@@ -128,7 +131,13 @@ void SerialCommServer::sendLoop() {
         mcu_serial_.sendData(packet);
         ipc_server_.publish(kAllInfoChannel, info);
 
+        // 每轮 500Hz 循环喂一次狗：循环停摆（死锁等）时 tick 停止，看门狗随之重启
+        WatchdogFeed::instance().tick();
+
         std::this_thread::sleep_until(start + period);
+
+        // 记录本帧实际耗时（含发送、发布与 sleep），用于统计 sendLoop 实际帧率
+        send_fps_counter_.tick();
     }
 }
 
