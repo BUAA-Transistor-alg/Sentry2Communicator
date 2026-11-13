@@ -155,6 +155,10 @@ struct AllInfo {
 static_assert(sizeof(AllInfo) <= ipc::kMaxPayload, "AllInfo 超过 IPC 单通道载荷上限");
 static_assert(sizeof(VisWrite) <= ipc::kMaxPayload, "VisWrite 超过 IPC 单条请求上限");
 static_assert(sizeof(NavWrite) <= ipc::kMaxPayload, "NavWrite 超过 IPC 单条请求上限");
+// kChannelCount 必须覆盖本文件使用的通道编号
+static_assert(ipc::kChannelCount > kAllInfoChannel, "kChannelCount 未覆盖 AllInfo 获取通道");
+static_assert(ipc::kChannelCount > kVisWriteChannel, "kChannelCount 未覆盖视觉写入通道");
+static_assert(ipc::kChannelCount > kNavWriteChannel, "kChannelCount 未覆盖导航写入通道");
 
 // steady_clock 时间点换算为秒数（double）
 inline double steadySeconds(std::chrono::steady_clock::time_point time) {

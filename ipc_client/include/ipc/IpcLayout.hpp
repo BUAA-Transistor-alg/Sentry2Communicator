@@ -24,12 +24,19 @@ namespace s2c {
 namespace ipc {
 
 // ── 可调参数 ──
-constexpr uint32_t kChannelCount  = 16;    // 获取通道与发送通道各自的最大数量
-constexpr size_t   kMaxPayload    = 1024;  // 单个通道内容 / 单条请求的载荷上限（字节）
+// 按串口通信客户端（serial_comm/SerialCommTypes.hpp）的使用量取 2 的整数幂:
+//   获取通道 1 个（AllInfo），发送通道 2 个（VisWrite / NavWrite）⇒ kChannelCount = 2
+//   载荷上限取 AllInfo 与写入结构体中最大者向上取 2 的整数幂 ⇒ kMaxPayload = 1024
+constexpr uint32_t kChannelCount  = 2;     // 获取通道与发送通道各自的最大数量（2 的整数幂）
+constexpr size_t   kMaxPayload    = 1024;  // 单通道内容 / 单条请求的载荷上限（2 的整数幂）
 constexpr uint32_t kQueueCapacity = 128;   // 请求队列容量
 
+static_assert((kChannelCount & (kChannelCount - 1)) == 0, "kChannelCount 必须是 2 的整数幂");
+static_assert((kMaxPayload & (kMaxPayload - 1)) == 0, "kMaxPayload 必须是 2 的整数幂");
+
 constexpr uint64_t kMagic   = 0x5345433249504331ULL;  // "SEC2IPC1"
-constexpr uint32_t kVersion = 1;
+// 共享内存布局版本：kChannelCount / kMaxPayload 等布局参数变化时递增
+constexpr uint32_t kVersion = 2;
 
 // 服务端状态（写在共享内存头部，客户端据此判断能否使用该段）
 enum class ServerState : uint32_t {
