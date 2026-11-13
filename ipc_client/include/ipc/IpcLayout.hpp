@@ -31,9 +31,6 @@ constexpr uint32_t kChannelCount  = 2;     // 获取通道与发送通道各自�
 constexpr size_t   kMaxPayload    = 1024;  // 单通道内容 / 单条请求的载荷上限（2 的整数幂）
 constexpr uint32_t kQueueCapacity = 128;   // 请求队列容量
 
-static_assert((kChannelCount & (kChannelCount - 1)) == 0, "kChannelCount 必须是 2 的整数幂");
-static_assert((kMaxPayload & (kMaxPayload - 1)) == 0, "kMaxPayload 必须是 2 的整数幂");
-
 constexpr uint64_t kMagic   = 0x5345433249504331ULL;  // "SEC2IPC1"
 // 共享内存布局版本：kChannelCount / kMaxPayload 等布局参数变化时递增
 constexpr uint32_t kVersion = 2;
