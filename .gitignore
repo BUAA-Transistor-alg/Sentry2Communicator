@@ -1,0 +1,11 @@
+# CMake 构建产物
+build/
+ipc_client/build/
+
+# Python
+__pycache__/
+*.pyc
+
+# 工具中间结果
+.tmpdiag
+.run/
