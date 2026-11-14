@@ -6,7 +6,7 @@
 // 全部结构与通道编号在本文件定义，服务端与客户端两个工程都只依赖这一份声明。
 #pragma once
 
-#include "serial_comm/SerialProtocol.hpp"
+#include "serial_comm/SerialCommProtocol.hpp"
 #include "ipc/IpcLayout.hpp"
 
 #include <chrono>
@@ -17,7 +17,7 @@ namespace serial_comm {
 
 // ── 通信参数 ──
 constexpr const char* kDefaultShmName = "/s2c_serial_comm";
-constexpr double kSendRateHz = 500.0;            // 服务端向串口发送与发布快照的频率
+constexpr double kSendRateHz = 300.0;            // 服务端向串口发送与发布快照的频率
 constexpr uint32_t kTargetCount = 6;             // 视觉向导航通信的目标列表长度
 constexpr uint32_t kPredictionPointCount = 10;   // 导航向视觉通信的预测序列长度
 constexpr double kPredictionIntervalSeconds = 0.1;
@@ -141,10 +141,11 @@ struct NavWrite {
     NavToVision nav_to_vision;      // 导航向视觉通信部分
 };
 
+// 本文件内容结构体的字段布局变化时，必须同步递增 ipc::kVersion
 // ── 客户端读取到的当前全部信息（6 个结构体）──
 struct AllInfo {
-    SerialSendData          send_data;      // 1. 服务端要发送给串口的全部数据
-    com::mcu::ReceivePacket mcu_data;       // 2. 串口收到的最新电控数据
+    SerialSendData          send_data;      // 1. 服务端要发送给串口的请求值（processSend 之前）
+    com::mcu::ReceivePacket mcu_data;       // 2. 串口收到的最新电控数据（processReceive 之后；未收到前为默认值，用 server_info.last_mcu_receive_time 判断）
     com::imu::ReceivePacket imu_data;       // 3. 串口收到的最新 IMU 数据
     VisToNav                vis_to_nav;     // 4. 视觉向导航通信内容
     NavToVision             nav_to_vision;  // 5. 导航向视觉通信内容

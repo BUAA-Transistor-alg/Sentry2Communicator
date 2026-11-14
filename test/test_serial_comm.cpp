@@ -2,7 +2,7 @@
 //
 // 用 pty 对模拟电控串口与 IMU 串口，验证:
 //   · 视觉写入火控/四轴与视觉向导航通信、导航写入变形与底盘位移与导航向视觉通信
-//   · 服务端按 500Hz 向串口发送维护的数据（内容与频率）
+//   · 服务端按 300Hz 向串口发送维护的数据（内容与频率）
 //   · 服务端接收电控/IMU 数据并更新最新版本与时间戳
 //   · 客户端两种读取方法都拿到 6 个结构体的完整快照
 //   · 视觉/导航写入范围互不影响、并发写入互不破坏
@@ -27,7 +27,7 @@ namespace {
 using namespace s2c;
 using s2c_test::waitFor;
 
-constexpr double kFrequencyToleranceHz = 100.0;   // 500Hz 允许的测试偏差
+constexpr double kFrequencyToleranceHz = 50.0;   // 300Hz 允许的测试偏差
 
 // 从 pty 主端持续读取并解析服务端发往电控的帧
 class McuSendFrameReader {
@@ -328,7 +328,7 @@ int main() {
     S2C_CHECK(nav_client.nav_get_all_info(nav_info));
     S2C_CHECK(std::memcmp(&nav_info.send_data, &info.send_data, sizeof(info.send_data)) == 0);
 
-    // 服务端按 500Hz 发出的帧内容正确
+    // 服务端按 300Hz 发出的帧内容正确
     S2C_CHECK(waitFor([&] {
         const McuSendFrameReader::Snapshot snapshot = reader.snapshot();
         return snapshot.has_packet
@@ -346,10 +346,10 @@ int main() {
         S2C_CHECK(snapshot.crc_errors == 0);
     }
 
-    // 频率: 500Hz
+    // 频率: 300Hz
     const auto frequency_start = std::chrono::steady_clock::now();
     const uint64_t frames_before = reader.snapshot().count;
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     const uint64_t frames_after = reader.snapshot().count;
     const double elapsed = std::chrono::duration<double>(
         std::chrono::steady_clock::now() - frequency_start).count();
@@ -453,7 +453,8 @@ int main() {
     S2C_CHECK(waitFor([&] {
         return vis_client.vis_get_all_info(info)
             && info.send_data.axes.pitch_torque == expected_pitch_torque
-            && info.send_data.deform_chassis.deform_control == (49 % 7);
+            && info.send_data.deform_chassis.deform_control == (49 % 7)
+            && info.nav_to_vision.suggested_target_id == 49;
     }, std::chrono::milliseconds(2000)));
     S2C_CHECK(info.send_data.fire_control.fire == static_cast<uint8_t>(49 % 2));
     S2C_CHECK(info.send_data.axes.yaw_big_target_position == 0.0);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "serial_comm/SerialProtocol.hpp"
+#include "serial_comm/SerialCommProtocol.hpp"
 
 namespace s2c {
 namespace com {
@@ -14,10 +14,10 @@ namespace com {
 class McuDataPreprocessor {
 public:
     // ── 发送包预处理 ──
-    mcu::SendPacket processSend(const mcu::SendPacket& packet) const;
+    static mcu::SendPacket processSend(const mcu::SendPacket& packet);
 
     // ── 接收包预处理 ──
-    mcu::ReceivePacket processReceive(const mcu::ReceivePacket& packet) const;
+    static mcu::ReceivePacket processReceive(const mcu::ReceivePacket& packet);
 };
 
 }  // namespace com

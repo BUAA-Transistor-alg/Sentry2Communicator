@@ -2,10 +2,10 @@
 //
 // 通信方式: 共享内存 + 信号量 + 进程共享 robust 互斥量
 //   · 共享内存: 服务端按名字创建并初始化，客户端按同一名字附加
-//   · 信号量: 客户端把请求放入队列后 post，服务端的请求线程 wait 后取出并调用回调
+//   · 信号量: 每个新增队列槽位 post 一次；服务端每个出队请求消费一个通知，批量清空依赖这一计数
 //   · 进程共享 robust 互斥量: 保护获取通道与请求队列。持有者进程死亡时由内核标记，
-//     下一个加锁者拿到 EOWNERDEAD 并接管（pthread_mutex_consistent），因此客户端
-//     调用不会因为服务端已失效而永久阻塞
+//     下一个加锁者拿到 EOWNERDEAD 并接管（pthread_mutex_consistent），因此服务端进程死亡
+//     不会让客户端永久阻塞；服务端存活但持有互斥量不释放时，客户端按互斥量语义等待
 //
 // 客户端不等待任何信号量、不设置任何超时: 获取通道直接读共享内存，发送通道入队后
 // 立即返回，队列满时覆盖最旧的一条请求。客户端每次调用的耗时只包含若干次系统调用
@@ -32,8 +32,9 @@ constexpr size_t   kMaxPayload    = 1024;  // 单通道内容 / 单条请求的�
 constexpr uint32_t kQueueCapacity = 128;   // 请求队列容量
 
 constexpr uint64_t kMagic   = 0x5345433249504331ULL;  // "SEC2IPC1"
-// 共享内存布局版本：kChannelCount / kMaxPayload 等布局参数变化时递增
-constexpr uint32_t kVersion = 2;
+// 共享内存布局版本：kChannelCount / kMaxPayload 等布局参数变化时递增；
+// SerialCommTypes.hpp 中内容结构体的字段布局变化时也必须递增
+constexpr uint32_t kVersion = 4;
 
 // 服务端状态（写在共享内存头部，客户端据此判断能否使用该段）
 enum class ServerState : uint32_t {
@@ -59,11 +60,12 @@ struct SendRequest {
 
 struct RequestQueue {
     pthread_mutex_t mutex;
-    sem_t available;              // 客户端入队后 post；服务端请求线程 wait
+    sem_t available;              // 每个新增槽位 post 一次；服务端每个出队请求消费一个通知
     uint32_t head;                // 出队位置
     uint32_t count;               // 当前请求数量
     uint64_t enqueued;            // 累计入队数量
     uint64_t dropped;             // 队列满时被覆盖的旧请求数量
+    uint64_t purged;              // 元数据损坏/stop 清空时丢弃的请求数量
     SendRequest requests[kQueueCapacity];
 };
 

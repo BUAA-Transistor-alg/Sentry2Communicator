@@ -1,4 +1,4 @@
-// SerialProtocol.hpp — 串口协议包定义（MCU 电控包、IMU 包与裁判系统数据段）
+// SerialCommProtocol.hpp — 串口协议包定义（MCU 电控包、IMU 包与裁判系统数据段）
 //
 // 内容由串口通信服务端（主工程）与串口通信客户端（本工程）共用；
 // 数据段与字段偏移的编译期检查在本文件末尾。
@@ -197,7 +197,8 @@ static_assert(offsetof(SentryInfo, sentry_info_3) == 6, "0x020D 偏移变化");
 //   - 模式位: 1 = 仅力矩、2 = 力矩 + 内环；其余任何取值（含 0）一律视为**非法模式**
 //     ⇒ 力矩按 0 处理（保守，见电控端实现）
 //   - 变形控制位（uint8_t）与底盘位移目标速度（x、y）是哨兵专有通道
-//   - pitch/roll 的"编码器/指令 → 角度"线性映射由上位机 McuDataPreprocessor 完成；
+//   - pitch/roll 的"编码器/指令 → 角度"线性映射由上位机 McuDataPreprocessor 负责；
+//     当前阶段该预处理器原样返回，标定映射待后续实现；
 //     yaw 轴的角度换算（编码器计数 → 弧度、多圈累计）由电控完成
 //   - 接收包携带四个关节的位置、速度、实际使用的控制力矩与电机温度，
 //     并携带裁判系统 13 个命令码的完整数据段（见 referee 命名空间）
@@ -375,7 +376,7 @@ struct ReceivePacket
     uint8_t frame_header1 = 0xA7;
     uint8_t frame_header2 = 0xB6;
     uint8_t frame_header3 = 0xC5;
-    uint8_t data_size;
+    uint8_t data_size = 52;
     float gx;                           // IMU 本体系角速度 (rad/s)
     float gy;
     float gz;
@@ -389,6 +390,13 @@ struct ReceivePacket
     uint32_t crc32;
 };
 #pragma pack(pop)
+
+// IMU 包长度与关键字段偏移（电控侧应逐字段核对）
+static_assert(sizeof(imu::SendPacket) == 8, "IMU 心跳发送包长度应为 8");
+static_assert(sizeof(imu::ReceivePacket) == 60, "IMU 接收包长度应为 60");
+static_assert(offsetof(imu::ReceivePacket, euler_yaw) == 28, "IMU 偏移变化");
+static_assert(offsetof(imu::ReceivePacket, dt_one_tenth_ms) == 52, "IMU 偏移变化");
+static_assert(offsetof(imu::ReceivePacket, crc32) == 56, "IMU 偏移变化");
 
 } // namespace imu
 

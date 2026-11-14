@@ -1,12 +1,18 @@
 // FrameRateCounter.cpp
 #include "common/FrameRateCounter.h"
 
+#include <stdexcept>
+
 FrameRateCounter::FrameRateCounter(size_t window_size)
-    : window_size_(window_size) {}
+    : window_size_(window_size) {
+    if (window_size_ == 0) {
+        throw std::invalid_argument("FrameRateCounter: 窗口大小必须大于 0");
+    }
+}
 
 void FrameRateCounter::tick() {
     using namespace std::chrono;
-    auto now = high_resolution_clock::now();
+    auto now = steady_clock::now();
     
     // 首次调用时不计算帧时间
     if (last_frame_time_.time_since_epoch().count() == 0) {
@@ -30,7 +36,7 @@ void FrameRateCounter::tick() {
 }
 
 double FrameRateCounter::fps() const {
-    if (frame_times_.empty()) return 0.0;
+    if (frame_times_.empty() || time_sum_ <= 0.0) return 0.0;
     return static_cast<double>(frame_times_.size()) / time_sum_;
 }
 
@@ -50,6 +56,9 @@ size_t FrameRateCounter::window_size() const {
 }
 
 void FrameRateCounter::set_window_size(size_t new_size) {
+    if (new_size == 0) {
+        throw std::invalid_argument("FrameRateCounter: 窗口大小必须大于 0");
+    }
     window_size_ = new_size;
     // 移除超出新窗口大小的旧数据
     while (frame_times_.size() > window_size_) {

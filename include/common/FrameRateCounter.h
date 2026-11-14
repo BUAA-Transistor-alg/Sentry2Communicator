@@ -49,7 +49,7 @@ public:
     void set_window_size(size_t new_size);
 
 private:
-    std::chrono::high_resolution_clock::time_point last_frame_time_;
+    std::chrono::steady_clock::time_point last_frame_time_;
     std::deque<double> frame_times_;  // 存储帧耗时的滑动窗口
     double time_sum_ = 0.0;           // 窗口内帧耗时总和
     size_t window_size_;               // 滑动窗口大小（帧数）

@@ -133,6 +133,72 @@ void testMcuReceiveValidFrame() {
     closePtyPair(pty);
 }
 
+// 串口输出缓冲被填满时，sendData 不会无限重试，返回 false
+void testMcuSendShortWriteFailure() {
+    std::cout << "[test] 串口发送短写失败" << std::endl;
+    PtyPair pty = makePtyPair();
+    com::McuCommunication serial(
+        [](const com::mcu::ReceivePacket&) {}, false, pty.slave_path);
+
+    bool failed = false;
+    for (int i = 0; i < 1000 && !failed; ++i) {
+        com::mcu::SendPacket packet{};
+        packet.pitch_torque = static_cast<float>(i);
+        failed = !serial.sendData(packet);
+    }
+    S2C_CHECK(failed);
+
+    serial.stopWorker();
+    closePtyPair(pty);
+}
+
+// CRC 错误帧之后紧跟的合法帧不能被丢弃（重同步必须扫描整个缓冲区）
+void testMcuAdjacentFrameAfterCrcError() {
+    std::cout << "[test] CRC 错误后紧跟的合法帧" << std::endl;
+    PtyPair pty = makePtyPair();
+    PacketSink<com::mcu::ReceivePacket> sink;
+    com::McuCommunication serial(
+        [&](const com::mcu::ReceivePacket& packet) { sink.push(packet); },
+        true, pty.slave_path);
+
+    auto bad = makeMcuReceiveFrame(sampleMcuPacket(0.5f));
+    bad.back() ^= 0xFF;
+    const auto good = makeMcuReceiveFrame(sampleMcuPacket(1.5f));
+    std::vector<uint8_t> combined = bad;
+    combined.insert(combined.end(), good.begin(), good.end());
+    writeAll(pty.master_fd, combined.data(), combined.size());
+
+    S2C_CHECK(waitFor([&] { return sink.size() >= 1; }, std::chrono::milliseconds(1000)));
+    S2C_CHECK(sink.size() == 1);
+    S2C_CHECK(sink.at(0).pitch_position == 1.5f);
+
+    serial.stopWorker();
+    closePtyPair(pty);
+}
+
+// data_size 与 ReceivePacket 长度不一致的帧（即使 CRC 正确）不能进入回调
+void testMcuWrongDataSizeRejected() {
+    std::cout << "[test] data_size 与结构体长度不一致" << std::endl;
+    PtyPair pty = makePtyPair();
+    PacketSink<com::mcu::ReceivePacket> sink;
+    com::McuCommunication serial(
+        [&](const com::mcu::ReceivePacket& packet) { sink.push(packet); },
+        true, pty.slave_path);
+
+    com::mcu::ReceivePacket packet = sampleMcuPacket(2.5f);
+    packet.data_size = 42;
+    const size_t frame_length = 3 + 1 + 42 + 1;
+    uint8_t* raw = reinterpret_cast<uint8_t*>(&packet);
+    raw[frame_length - 1] = com::CRC8_Check_Sum(raw, frame_length - 1);
+    writeAll(pty.master_fd, raw, frame_length);
+
+    S2C_CHECK(!waitFor([&] { return sink.size() >= 1; }, std::chrono::milliseconds(200)));
+    S2C_CHECK(sink.size() == 0);
+
+    serial.stopWorker();
+    closePtyPair(pty);
+}
+
 // CRC 错误的帧被丢弃，随后的垃圾字节之后仍能重新同步到合法帧
 void testMcuCrcFailureAndResync() {
     std::cout << "[test] CRC 校验失败丢弃与垃圾字节后重新同步" << std::endl;
@@ -291,6 +357,9 @@ void testImuReceiveAndSend() {
 
 int main() {
     testMcuReceiveValidFrame();
+    testMcuSendShortWriteFailure();
+    testMcuAdjacentFrameAfterCrcError();
+    testMcuWrongDataSizeRejected();
     testMcuCrcFailureAndResync();
     testMcuMultipleFramesInOneWrite();
     testMcuSendFrame();

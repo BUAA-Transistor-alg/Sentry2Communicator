@@ -7,13 +7,14 @@
 //   - MCU 回调里经预处理器后缓存"处理前 / 处理后"两份包（预处理器当前原样返回）
 //   - IMU 回调里缓存最新包（IMU 固定在大 yaw 转子，可信、高频）
 //
-// 端口筛选: USB 设备的 iProduct 为 AutoAim_IMU_Com 的给 IMU，其余给 MCU；
+// 端口筛选: iProduct 为 AutoAim_IMU_Com 的给 IMU，其余非空 iProduct 给 MCU；
+// 读不到 iProduct 的端口不参与筛选。
 //           构造时可显式指定两个设备节点（跳过筛选），供现场固定端口与自测使用。
 #ifndef S2C_COM_COMMUNICATIONS_HPP
 #define S2C_COM_COMMUNICATIONS_HPP
 
 #include "SerialProtocol.hpp"
-#include "serial_comm/SerialProtocol.hpp"
+#include "serial_comm/SerialCommProtocol.hpp"
 #include "CRC.h"
 #include "McuDataPreprocessor.h"
 #include <string>
@@ -24,7 +25,8 @@ namespace com {
 
 // ── 端口筛选函数 ──
 inline bool mcuPortSelector(const std::string& product_info) {
-    return product_info != "AutoAim_IMU_Com";
+    // 读不到 USB iProduct 时返回空串，不能把这种端口当作电控端口
+    return !product_info.empty() && product_info != "AutoAim_IMU_Com";
 }
 inline bool imuPortSelector(const std::string& product_info) {
     return product_info == "AutoAim_IMU_Com";
@@ -108,8 +110,8 @@ public:
 
     // ── 原始（处理前）串口包的只读访问器 ──
     // 返回**副本**: onXxxReceive 由串口后台线程写入，返回引用会与写入竞争
-    // （调用方拿到的引用可能在读取过程中被后台线程改写）。需要"同一次加锁的一致快照"
-    // 时请用 getLatestData()。
+    // （调用方拿到的引用可能在读取过程中被后台线程改写）。getLatestData() 保证各通道
+    // 内部无撕裂；IMU 与 MCU 分别加锁读取，跨通道不是同一时刻的快照。
     mcu::ReceivePacket lastRawMcuPacket() {
         std::lock_guard<std::mutex> lock(mcu_mutex_);
         return latest_mcu_raw_;
@@ -121,7 +123,7 @@ public:
 
     // 发送 MCU 数据（发送前经预处理器，当前为原样返回）
     bool sendToMcu(mcu::SendPacket packet) {
-        mcu::SendPacket processed = preprocessor_.processSend(packet);
+        mcu::SendPacket processed = McuDataPreprocessor::processSend(packet);
         return mcu_serial_.sendData(processed);
     }
 
@@ -143,23 +145,13 @@ private:
     }
 
     void onMcuReceive(const mcu::ReceivePacket& packet) {
-        // ★ 在 processReceive **之前**保留处理前的原始串口包
-        //   （latest_mcu_packet_ 是它的输出；两份数据分别供调用方使用）
-        {
-            std::lock_guard<std::mutex> lock(mcu_mutex_);
-            latest_mcu_raw_ = packet;
-        }
-        const mcu::ReceivePacket processed = preprocessor_.processReceive(packet);
-        {
-            std::lock_guard<std::mutex> lock(mcu_mutex_);
-            latest_mcu_packet_ = processed;
-            has_mcu_data_ = true;
-        }
+        // 原始包与处理后包在同一临界区内一起更新，保证 getLatestData() 拿到同一帧的配对
+        const mcu::ReceivePacket processed = McuDataPreprocessor::processReceive(packet);
+        std::lock_guard<std::mutex> lock(mcu_mutex_);
+        latest_mcu_raw_ = packet;
+        latest_mcu_packet_ = processed;
+        has_mcu_data_ = true;
     }
-
-    McuDataPreprocessor  preprocessor_;
-    McuCommunication     mcu_serial_;
-    ImuCommunication     imu_serial_;
 
     std::mutex         imu_mutex_;
     imu::ReceivePacket latest_imu_packet_{};
@@ -169,6 +161,10 @@ private:
     mcu::ReceivePacket latest_mcu_packet_{};   // McuDataPreprocessor 输出（当前原样返回）
     mcu::ReceivePacket latest_mcu_raw_{};      // ★ 处理前原始串口包（processReceive 输入）
     bool               has_mcu_data_ = false;
+
+    // 串口对象最后声明：构造失败时先于互斥量与数据成员析构，接收线程先停止
+    McuCommunication     mcu_serial_;
+    ImuCommunication     imu_serial_;
 };
 
 }  // namespace com

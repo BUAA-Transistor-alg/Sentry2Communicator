@@ -1,6 +1,6 @@
 // ipc_client/examples/example.cpp — SerialCommClient 使用示例
 //
-// 串口通信服务端在主工程里（s2c::serial_comm::SerialCommServer），按 500Hz 收发串口并
+// 串口通信服务端在主工程里（s2c::serial_comm::SerialCommServer），按 300Hz 收发串口并
 // 发布完整快照。本示例演示客户端视觉部分与导航部分的读取与写入；服务端未启动时
 // 所有调用返回 false，程序照常结束。
 #include "SerialCommClient.hpp"

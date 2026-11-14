@@ -1,6 +1,6 @@
 // SerialCommClient.hpp — 串口通信客户端（视觉部分 / 导航部分）
 //
-// 服务端在主工程里（s2c::serial_comm::SerialCommServer），维护串口收发数据并按 500Hz
+// 服务端在主工程里（s2c::serial_comm::SerialCommServer），维护串口收发数据并按 300Hz
 // 发送；本客户端通过共享内存读取服务端发布的完整快照，或按各自范围提交写入内容。
 //
 // 方法前缀区分两个部分:

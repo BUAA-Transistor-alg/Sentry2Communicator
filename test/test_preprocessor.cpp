@@ -15,7 +15,6 @@ using namespace s2c_test;
 
 void testSendPassthrough() {
     std::cout << "[test] 发送包原样返回" << std::endl;
-    com::McuDataPreprocessor pre;
 
     com::mcu::SendPacket packet{};
     packet.friction_wheel_enable = 1;
@@ -40,7 +39,7 @@ void testSendPassthrough() {
     packet.displacement_target_velocity_x = 0.75f;
     packet.displacement_target_velocity_y = -1.5f;
 
-    const com::mcu::SendPacket processed = pre.processSend(packet);
+    const com::mcu::SendPacket processed = com::McuDataPreprocessor::processSend(packet);
     S2C_CHECK(std::memcmp(&processed, &packet, sizeof(packet)) == 0);
     S2C_CHECK(processed.yaw_big_target_position == 1.25);
     S2C_CHECK(processed.pitch_target_position == 0.125f);
@@ -51,7 +50,6 @@ void testSendPassthrough() {
 
 void testReceivePassthrough() {
     std::cout << "[test] 接收包原样返回" << std::endl;
-    com::McuDataPreprocessor pre;
 
     com::mcu::ReceivePacket packet{};
     packet.data_size = 237;
@@ -92,7 +90,7 @@ void testReceivePassthrough() {
     packet.ground_robot_position.heavyengineer_y = -6.5f;
     packet.sentry_info.sentry_info = 0x7F;
 
-    const com::mcu::ReceivePacket processed = pre.processReceive(packet);
+    const com::mcu::ReceivePacket processed = com::McuDataPreprocessor::processReceive(packet);
     S2C_CHECK(std::memcmp(&processed, &packet, sizeof(packet)) == 0);
     // 底盘 yaw 角速度此前会被取负，现在也必须原样返回
     S2C_CHECK(processed.chassis_imu_omega == 4.0f);

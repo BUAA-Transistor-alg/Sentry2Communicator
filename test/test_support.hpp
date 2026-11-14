@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CRC.h"
-#include "serial_comm/SerialProtocol.hpp"
+#include "serial_comm/SerialCommProtocol.hpp"
 
 #include <fcntl.h>
 #include <stdlib.h>

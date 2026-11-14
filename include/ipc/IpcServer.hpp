@@ -54,38 +54,49 @@ public:
         static_assert(std::is_trivially_copyable<T>::value, "发送内容必须是可逐字节复制的类型");
         static_assert(sizeof(T) <= kMaxPayload, "发送内容超过单条请求的载荷上限");
         setHandlerBytes(channel,
-                        [handler = std::move(handler)](const void* data, uint32_t size) {
-                            if (size != sizeof(T)) return;   // 与注册类型不符的请求丢弃
+                        [handler = std::move(handler)](const void* data, uint32_t size) -> bool {
+                            if (size != sizeof(T)) return false;   // 与注册类型不符的请求丢弃
                             alignas(T) unsigned char buffer[sizeof(T)];
                             std::memcpy(buffer, data, sizeof(T));
                             handler(*std::launder(reinterpret_cast<const T*>(buffer)));
+                            return true;
                         });
     }
 
-    void start();   // 启动请求处理线程
-    void stop();    // 停止请求处理线程（未启动时为空操作）
+    void start();   // 启动请求处理线程；停止后再次启动会清空残留请求，首次启动保留启动前排队的请求
+    // 停止请求处理线程；未启动过时只置状态，不清空启动前排队的请求
+    void stop();
 
+    // 注意：stats() 的字段来自相近时刻，不是原子快照
     struct Stats {
         uint64_t enqueued = 0;   // 客户端累计入队请求数
         uint64_t dropped = 0;    // 队列满时被覆盖的请求数
-        uint64_t handled = 0;    // 已处理并回调的请求数
+        uint64_t handled = 0;    // 已出队并实际调用回调的请求数
+        uint64_t rejected = 0;   // 已出队但未回调（通道未注册、尺寸不匹配或回调抛异常）
+        uint64_t purged = 0;     // stop()/start() 或损坏队列清空时丢弃的请求数
     };
     Stats stats() const;
+    bool requestFailed() const { return request_failed_.load(std::memory_order_acquire); }
 
 private:
     void publishBytes(uint32_t channel, const void* data, size_t size);
-    void setHandlerBytes(uint32_t channel, std::function<void(const void*, uint32_t)> handler);
+    void setHandlerBytes(uint32_t channel, std::function<bool(const void*, uint32_t)> handler);
     void requestLoop();
+    void purgeQueueLocked();   // 调用方必须已持有 queue.mutex
     void removeStaleSegment();
 
     std::string name_;
     int shm_fd_ = -1;
     SharedLayout* layout_ = nullptr;
 
-    std::array<std::function<void(const void*, uint32_t)>, kChannelCount> handlers_{};
+    std::array<std::function<bool(const void*, uint32_t)>, kChannelCount> handlers_{};
     std::thread request_thread_;
     std::atomic<bool> stop_{false};
+    std::atomic<bool> request_failed_{false};
     std::atomic<uint64_t> handled_{0};
+    std::atomic<uint64_t> rejected_{0};
+    bool stopped_once_ = false;   // 运行过的实例 stop() 后再次 start() 时丢弃停止窗口内残留的请求
+    bool started_once_ = false;   // start() 是否执行过
 };
 
 }  // namespace ipc

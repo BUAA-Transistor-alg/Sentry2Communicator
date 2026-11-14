@@ -19,6 +19,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -27,6 +28,7 @@
 #include <mutex>
 #include <set>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -81,6 +83,22 @@ void testGetAndSend() {
     server.publish(ipc_test::kStatusChannel, ipc_test::StatusData{7, 1.5f});
     server.publish(ipc_test::kAltStatusChannel, ipc_test::AltStatus{0x1122334455667788ULL});
 
+    // 两组发送通道分别回调（必须在 start() 之前注册）
+    std::mutex mutex;
+    std::vector<ipc_test::CommandData> commands;
+    std::vector<ipc_test::AltCommand> alt_commands;
+    server.setHandler<ipc_test::CommandData>(
+        ipc_test::kCommandChannel, [&](const ipc_test::CommandData& command) {
+            std::lock_guard<std::mutex> lock(mutex);
+            commands.push_back(command);
+        });
+    server.setHandler<ipc_test::AltCommand>(
+        ipc_test::kAltCommandChannel, [&](const ipc_test::AltCommand& command) {
+            std::lock_guard<std::mutex> lock(mutex);
+            alt_commands.push_back(command);
+        });
+    server.start();
+
     ipc::IpcClient client(name);
 
     ipc_test::StatusData status{};
@@ -101,22 +119,6 @@ void testGetAndSend() {
     S2C_CHECK(client.get(ipc_test::kStatusChannel, status));
     S2C_CHECK(status.counter == 8);
 
-    // 两组发送通道分别回调
-    std::mutex mutex;
-    std::vector<ipc_test::CommandData> commands;
-    std::vector<ipc_test::AltCommand> alt_commands;
-    server.setHandler<ipc_test::CommandData>(
-        ipc_test::kCommandChannel, [&](const ipc_test::CommandData& command) {
-            std::lock_guard<std::mutex> lock(mutex);
-            commands.push_back(command);
-        });
-    server.setHandler<ipc_test::AltCommand>(
-        ipc_test::kAltCommandChannel, [&](const ipc_test::AltCommand& command) {
-            std::lock_guard<std::mutex> lock(mutex);
-            alt_commands.push_back(command);
-        });
-    server.start();
-
     S2C_CHECK(client.send(ipc_test::kCommandChannel, ipc_test::CommandData{3, -7}));
     S2C_CHECK(client.send(ipc_test::kAltCommandChannel, ipc_test::AltCommand{0.25}));
     S2C_CHECK(waitFor([&] {
@@ -130,6 +132,11 @@ void testGetAndSend() {
         S2C_CHECK(commands[0].index == -7);
         S2C_CHECK(alt_commands[0].gain == 0.25);
     }
+
+    // 尺寸与注册类型不匹配的请求被拒绝，计入 rejected 而不是 handled
+    S2C_CHECK(client.send(ipc_test::kCommandChannel, ipc_test::ShortStatus{1}));
+    S2C_CHECK(waitFor([&] { return server.stats().rejected >= 1; },
+                      std::chrono::milliseconds(2000)));
     server.stop();
 }
 
@@ -329,6 +336,79 @@ void testKilledServerProcess() {
     S2C_CHECK(::shm_unlink(name.c_str()) == 0);
 }
 
+void testStopWithoutDestruction() {
+    std::printf("[test] stop 后（不析构）客户端判定不可用\n");
+    const std::string name = makeName("stop");
+    ipc::IpcServer server(name);
+    server.publish(ipc_test::kStatusChannel, ipc_test::StatusData{6, 0.5f});
+    server.start();
+
+    ipc::IpcClient client(name);
+    ipc_test::StatusData data{};
+    S2C_CHECK(client.get(ipc_test::kStatusChannel, data));
+    S2C_CHECK(data.counter == 6);
+
+    server.stop();   // 不析构，客户端应立即判定服务端不可用
+    S2C_CHECK(waitFor([&] { return !client.get(ipc_test::kStatusChannel, data); },
+                      std::chrono::milliseconds(2000)));
+    S2C_CHECK(!client.send(ipc_test::kCommandChannel, ipc_test::CommandData{1, 1}));
+
+    // 重新 start 后客户端可以再次附加
+    server.start();
+    server.publish(ipc_test::kStatusChannel, ipc_test::StatusData{7, 0.5f});
+    S2C_CHECK(waitFor([&] {
+        return client.get(ipc_test::kStatusChannel, data) && data.counter == 7;
+    }, std::chrono::milliseconds(2000)));
+    server.stop();
+}
+
+void testStopClearsStaleRequests() {
+    std::printf("[test] stop 清空残留请求\n");
+    const std::string name = makeName("stale");
+    ipc::IpcServer server(name);
+    std::atomic<int> calls{0};
+    server.setHandler<ipc_test::CommandData>(
+        ipc_test::kCommandChannel,
+        [&](const ipc_test::CommandData&) { calls.fetch_add(1, std::memory_order_relaxed); });
+    server.publish(ipc_test::kStatusChannel, ipc_test::StatusData{1, 0.5f});
+    server.start();
+    server.stop();
+
+    // 绕过客户端状态检查，直接向队列塞一条请求，模拟停止窗口内的残留
+    const pid_t pid = spawnHelper({"enqueue-request", name,
+                                   std::to_string(ipc_test::kCommandChannel)});
+    S2C_CHECK(waitHelper(pid) == 0);
+
+    server.start();   // start 应清掉残留请求
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    S2C_CHECK(calls.load(std::memory_order_relaxed) == 0);
+    server.stop();
+}
+
+void testCorruptActiveIndex() {
+    std::printf("[test] 共享内存 active 索引被改写\n");
+    const std::string name = makeName("corrupt");
+    ipc::IpcServer server(name);
+    server.publish(ipc_test::kStatusChannel, ipc_test::StatusData{42, 0.5f});
+    server.start();
+    ipc::IpcClient client(name);
+    ipc_test::StatusData data{};
+    S2C_CHECK(client.get(ipc_test::kStatusChannel, data));
+    S2C_CHECK(data.counter == 42);
+
+    const pid_t pid = spawnHelper({"corrupt-active", name,
+                                   std::to_string(ipc_test::kStatusChannel)});
+    S2C_CHECK(waitHelper(pid) == 0);
+    S2C_CHECK(!client.get(ipc_test::kStatusChannel, data));
+
+    // 服务端发布时恢复非法索引，客户端重新读到新值
+    server.publish(ipc_test::kStatusChannel, ipc_test::StatusData{43, 0.5f});
+    S2C_CHECK(waitFor([&] {
+        return client.get(ipc_test::kStatusChannel, data) && data.counter == 43;
+    }, std::chrono::milliseconds(2000)));
+    server.stop();
+}
+
 void testNoServer() {
     std::printf("[test] 服务端不存在时立即返回\n");
     ipc::IpcClient client(makeName("absent"));
@@ -354,6 +434,9 @@ int main() {
     testConcurrentClients();
     testDeadOwnerRecovery();
     testServerStopAndRestart();
+    testStopWithoutDestruction();
+    testStopClearsStaleRequests();
+    testCorruptActiveIndex();
     testKilledServerProcess();
     testNoServer();
     std::printf("所有 IPC 测试通过\n");

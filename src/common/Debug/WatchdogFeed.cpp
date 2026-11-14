@@ -38,7 +38,7 @@ long long WatchdogFeed::envMs(const char* name, long long fallback_ms) {
     errno = 0;
     char* end = nullptr;
     const long long x = std::strtoll(v, &end, 10);
-    if (errno != 0 || end == v) {
+    if (errno != 0 || end == v || *end != '\0') {
         std::cerr << "[WatchdogFeed] 环境变量 " << name << "=\"" << v
                   << "\" 非法，按默认值 " << fallback_ms << " 处理" << std::endl;
         return fallback_ms;
@@ -83,6 +83,7 @@ void WatchdogFeed::stop() {
     if (thread_.joinable()) thread_.join();   // 先停线程再关套接字，避免并发使用 fd_
     closeSocket();
     enabled_.store(false, std::memory_order_relaxed);
+    started_.store(false, std::memory_order_relaxed);   // 允许 stop() 后再次 start()
 }
 
 void WatchdogFeed::tick() {
@@ -157,11 +158,12 @@ void WatchdogFeed::closeSocket() {
 void WatchdogFeed::loop() {
     std::uint64_t seq = 0;
     while (running_.load(std::memory_order_relaxed)) {
-        // 分片睡眠：stop() 最多等 50ms 即可生效，不受上报周期影响
-        for (long long slept = 0;
-             slept < feed_period_ms_ && running_.load(std::memory_order_relaxed);
-             slept += 50) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        // 分片睡眠到下一次上报时刻：按剩余时间取片，避免周期被向上取整到 50ms 倍数；
+        // stop() 最多等 50ms 即可生效
+        const long long target = nowMs() + feed_period_ms_;
+        while (running_.load(std::memory_order_relaxed) && nowMs() < target) {
+            const long long remain = target - nowMs();
+            std::this_thread::sleep_for(std::chrono::milliseconds(remain < 50 ? remain : 50));
         }
         if (!running_.load(std::memory_order_relaxed)) break;
 

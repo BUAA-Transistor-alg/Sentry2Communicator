@@ -1,11 +1,11 @@
-// tools/test_serial.cpp — MCU 串口链路自检
+// tools/test_serial_mcu.cpp — MCU 串口链路自检
 //
 // 打印每帧 MCU 反馈包的全部字段（四个关节的位置/速度/力矩/温度、底盘 IMU、状态位
 // 与裁判系统 13 个命令码数据段）以及实际选中的串口（include/com/SerialProtocol.hpp
 // 的 isOpen() / portName() 就是给本程序排查"到底选中/打开了哪个口"用的），
-// 10ms 周期向电控发送一帧（自瞄开、四轴仅力矩、零目标、零力矩）。
+// 10ms 周期向电控发送一帧（摩擦轮开、火控关、四轴仅力矩、零目标、零力矩）。
 //
-// 运行: ./build/s2c_test_serial，Ctrl+C 退出
+// 运行: ./build/s2c_test_serial_mcu，Ctrl+C 退出
 
 #include "Communications.hpp"
 
@@ -163,7 +163,7 @@ int main() {
     while (keep_running) {
         com::mcu::SendPacket packet;
         // 默认初始化的 frame_header1/2、protocol_version、data_size 已自动设置
-        packet.friction_wheel_enable = 1;
+        packet.friction_wheel_enable = 0;
         packet.fire = 0;
         // ── 大 yaw：仅力矩模式、目标位置/速度不参与 ──
         packet.yaw_big_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
