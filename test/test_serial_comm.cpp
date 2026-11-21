@@ -164,6 +164,7 @@ serial_comm::NavWrite makeInitialNavWrite() {
     write.serial.deform_chassis.deform_control = 0x0A;
     write.serial.deform_chassis.displacement_target_velocity_x = 0.5f;
     write.serial.deform_chassis.displacement_target_velocity_y = -0.25f;
+    write.serial.deform_chassis.displacement_target_velocity_yaw = 0.75f;
     write.nav_to_vision.auto_aim_mode = serial_comm::AutoAimMode::kEnergyRune;
     write.nav_to_vision.suggested_target_id = 4;
     write.nav_to_vision.current_velocity[0] = 1.0f;
@@ -261,6 +262,8 @@ com::mcu::SendPacket buildExpectedSendPacket(const serial_comm::VisWrite& vis_wr
         nav_write.serial.deform_chassis.displacement_target_velocity_x;
     packet.displacement_target_velocity_y =
         nav_write.serial.deform_chassis.displacement_target_velocity_y;
+    packet.displacement_target_velocity_yaw =
+        nav_write.serial.deform_chassis.displacement_target_velocity_yaw;
     return packet;
 }
 
@@ -415,12 +418,14 @@ int main() {
     nav_only.serial.deform_chassis.deform_control = 0x05;
     nav_only.serial.deform_chassis.displacement_target_velocity_x = -1.0f;
     nav_only.serial.deform_chassis.displacement_target_velocity_y = 2.0f;
+    nav_only.serial.deform_chassis.displacement_target_velocity_yaw = -0.5f;
     nav_only.nav_to_vision.suggested_big_yaw = 1.5f;
     S2C_CHECK(nav_client.nav_write(nav_only));
     S2C_CHECK(waitFor([&] {
         return nav_client.nav_get_all_info(info)
             && info.send_data.deform_chassis.deform_control == 0x05
-            && info.send_data.deform_chassis.displacement_target_velocity_y == 2.0f;
+            && info.send_data.deform_chassis.displacement_target_velocity_y == 2.0f
+            && info.send_data.deform_chassis.displacement_target_velocity_yaw == -0.5f;
     }, std::chrono::milliseconds(2000)));
     S2C_CHECK(info.send_data.fire_control.friction_wheel_enable == 0);
     S2C_CHECK(info.send_data.axes.yaw_big_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID);

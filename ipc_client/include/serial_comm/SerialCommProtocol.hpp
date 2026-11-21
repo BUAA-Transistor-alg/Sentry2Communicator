@@ -227,7 +227,7 @@ struct SendPacket
     uint8_t frame_header1 = 0x42;
     uint8_t frame_header2 = 0x52;
     uint8_t protocol_version = PROTOCOL_VERSION;
-    uint8_t data_size = 67;             // 1+1 + 1+4+4 + (1+8+4+4) + 3×(1+4+4+4)
+    uint8_t data_size = 71;             // 1+1 + 1+4+4+4 + (1+8+4+4) + 3×(1+4+4+4)
     // ── 火控 ──
     uint8_t friction_wheel_enable;      // 摩擦轮开关
     uint8_t fire;                       // 火控
@@ -235,6 +235,8 @@ struct SendPacket
     uint8_t deform_control;                     // 变形控制位
     float   displacement_target_velocity_x;     // 底盘位移目标速度 x（m/s）
     float   displacement_target_velocity_y;     // 底盘位移目标速度 y（m/s）
+    float   displacement_target_velocity_yaw;   // 底盘位移目标角速度 yaw（rad/s）
+
     // ── 大 yaw ──
     uint8_t yaw_big_mode;               // AxisMode
     double  yaw_big_target_position;    // rad，多圈连续
@@ -309,7 +311,7 @@ struct ReceivePacket
 #pragma pack(pop)
 
 // 编译期一致性检查（payload 长度必须与 data_size 一致）
-static_assert(sizeof(SendPacket) == 3 + 1 + 67 + 1,
+static_assert(sizeof(SendPacket) == 3 + 1 + 71 + 1,
               "SendPacket 布局与 data_size 不一致");
 static_assert(sizeof(ReceivePacket) == 3 + 1 + 237 + 1,
               "ReceivePacket 布局与 data_size 不一致");
@@ -319,12 +321,13 @@ static_assert(offsetof(SendPacket, friction_wheel_enable) == 4, "偏移变化");
 static_assert(offsetof(SendPacket, deform_control) == 6, "偏移变化");
 static_assert(offsetof(SendPacket, displacement_target_velocity_x) == 7, "偏移变化");
 static_assert(offsetof(SendPacket, displacement_target_velocity_y) == 11, "偏移变化");
-static_assert(offsetof(SendPacket, yaw_big_mode) == 15, "偏移变化");
-static_assert(offsetof(SendPacket, yaw_big_target_position) == 16, "偏移变化");
-static_assert(offsetof(SendPacket, roll_mode) == 32, "偏移变化");
-static_assert(offsetof(SendPacket, yaw_small_mode) == 45, "偏移变化");
-static_assert(offsetof(SendPacket, pitch_mode) == 58, "偏移变化");
-static_assert(offsetof(SendPacket, crc8) == 71, "偏移变化");
+static_assert(offsetof(SendPacket, displacement_target_velocity_yaw) == 15, "偏移变化");
+static_assert(offsetof(SendPacket, yaw_big_mode) == 19, "偏移变化");
+static_assert(offsetof(SendPacket, yaw_big_target_position) == 20, "偏移变化");
+static_assert(offsetof(SendPacket, roll_mode) == 36, "偏移变化");
+static_assert(offsetof(SendPacket, yaw_small_mode) == 49, "偏移变化");
+static_assert(offsetof(SendPacket, pitch_mode) == 62, "偏移变化");
+static_assert(offsetof(SendPacket, crc8) == 75, "偏移变化");
 
 // 接收包关键字段偏移（电控侧应逐字段核对，避免静默错位）
 static_assert(offsetof(ReceivePacket, bullet_velocity) == 4, "偏移变化");

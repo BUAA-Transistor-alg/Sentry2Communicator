@@ -148,6 +148,9 @@ void SerialCommServer::sendLoop() {
                 state_.send_data.deform_chassis.displacement_target_velocity_x;
             packet.displacement_target_velocity_y =
                 state_.send_data.deform_chassis.displacement_target_velocity_y;
+            packet.displacement_target_velocity_yaw =
+                state_.send_data.deform_chassis.displacement_target_velocity_yaw;
+
 
             info.send_data = state_.send_data;
             info.mcu_data = state_.mcu_packet;
