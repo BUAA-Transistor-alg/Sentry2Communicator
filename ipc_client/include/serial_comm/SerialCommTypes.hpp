@@ -38,22 +38,22 @@ struct FireControlData {
 // ── 四个轴的控制量 ──
 struct AxisControlData {
     // 大 yaw
-    uint8_t yaw_big_mode;               // com::mcu::AxisMode
+    uint8_t yaw_big_mode{com::mcu::AXIS_MODE_TORQUE_PLUS_PID};
     double  yaw_big_target_position;    // rad，多圈连续
     float   yaw_big_target_velocity;    // rad/s
     float   yaw_big_torque;             // N·m
     // roll
-    uint8_t roll_mode;                  // com::mcu::AxisMode
+    uint8_t roll_mode{com::mcu::AXIS_MODE_TORQUE_PLUS_PID};
     float   roll_target_position;       // rad
     float   roll_target_velocity;       // rad/s
     float   roll_torque;                // N·m
     // 小 yaw
-    uint8_t yaw_small_mode;             // com::mcu::AxisMode
+    uint8_t yaw_small_mode{com::mcu::AXIS_MODE_TORQUE_PLUS_PID};
     float   yaw_small_target_position;  // rad
     float   yaw_small_target_velocity;  // rad/s
     float   yaw_small_torque;           // N·m
     // pitch
-    uint8_t pitch_mode;                 // com::mcu::AxisMode
+    uint8_t pitch_mode{com::mcu::AXIS_MODE_TORQUE_PLUS_PID};
     float   pitch_target_position;      // rad
     float   pitch_target_velocity;      // rad/s
     float   pitch_torque;               // N·m

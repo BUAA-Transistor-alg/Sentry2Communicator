@@ -156,7 +156,7 @@ int main() {
               << ", port: " << (serial.portName().empty() ? "<none>" : serial.portName())
               << std::endl;
 
-    std::cout << "Sending packets... (friction_wheel=1, fire=0, 四轴仅力矩、零目标、零力矩)" << std::endl;
+    std::cout << "Sending packets... (friction_wheel=0, fire=0, 四轴模式2、零目标、零力矩)" << std::endl;
     std::cout << "Press Ctrl+C to exit." << std::endl;
 
     int send_count = 0;
@@ -165,23 +165,23 @@ int main() {
         // 默认初始化的 frame_header1/2、protocol_version、data_size 已自动设置
         packet.friction_wheel_enable = 0;
         packet.fire = 0;
-        // ── 大 yaw：仅力矩模式、目标位置/速度不参与 ──
-        packet.yaw_big_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
+        // ── 大 yaw：力矩与位置/速度内环模式 ──
+        packet.yaw_big_mode = com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
         packet.yaw_big_target_position = 0.0;
         packet.yaw_big_target_velocity = 0.0f;
         packet.yaw_big_torque = 0.0f;
         // ── roll ──
-        packet.roll_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
+        packet.roll_mode = com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
         packet.roll_target_position = 0.0f;
         packet.roll_target_velocity = 0.0f;
         packet.roll_torque = 0.0f;
         // ── 小 yaw ──
-        packet.yaw_small_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
+        packet.yaw_small_mode = com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
         packet.yaw_small_target_position = 0.0f;
         packet.yaw_small_target_velocity = 0.0f;
         packet.yaw_small_torque = 0.0f;
         // ── pitch ──
-        packet.pitch_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
+        packet.pitch_mode = com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
         packet.pitch_target_position = 0.0f;
         packet.pitch_target_velocity = 0.0f;
         packet.pitch_torque = 0.0f;

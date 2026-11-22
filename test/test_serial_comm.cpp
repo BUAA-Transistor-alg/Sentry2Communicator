@@ -288,6 +288,16 @@ int main() {
     serial_comm::SerialCommClient vis_client(shm_name);
     serial_comm::SerialCommClient nav_client(shm_name);
 
+    // 未收到客户端写入时，串口实际发送的四个关节模式均为 2。
+    S2C_CHECK(waitFor([&] {
+        const auto snapshot = reader.snapshot();
+        return snapshot.has_packet
+            && snapshot.packet.yaw_big_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID
+            && snapshot.packet.roll_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID
+            && snapshot.packet.yaw_small_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID
+            && snapshot.packet.pitch_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
+    }, std::chrono::milliseconds(2000)));
+
     const serial_comm::VisWrite vis_write = makeInitialVisWrite();
     const serial_comm::NavWrite nav_write = makeInitialNavWrite();
     S2C_CHECK(vis_client.vis_write(vis_write));
@@ -413,6 +423,17 @@ int main() {
                           sizeof(nav_write.serial.deform_chassis)) == 0);
     S2C_CHECK(std::memcmp(&info.nav_to_vision, &nav_write.nav_to_vision,
                           sizeof(nav_write.nav_to_vision)) == 0);
+
+    // 客户端未显式填写的模式也应保持为 2，并完整传到串口。
+    S2C_CHECK(waitFor([&] {
+        const auto snapshot = reader.snapshot();
+        return snapshot.has_packet
+            && snapshot.packet.yaw_big_target_position == 2.5
+            && snapshot.packet.yaw_big_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID
+            && snapshot.packet.roll_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID
+            && snapshot.packet.yaw_small_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID
+            && snapshot.packet.pitch_mode == com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
+    }, std::chrono::milliseconds(2000)));
 
     serial_comm::NavWrite nav_only{};
     nav_only.serial.deform_chassis.deform_control = 0x05;

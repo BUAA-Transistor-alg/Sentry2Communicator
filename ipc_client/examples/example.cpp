@@ -25,19 +25,19 @@ VisWrite makeVisWrite(int iteration) {
     write.serial.fire_control.friction_wheel_enable = 1;
     write.serial.fire_control.fire = (iteration % 10 == 0) ? 1 : 0;
 
-    write.serial.axes.yaw_big_mode = s2c::com::mcu::AXIS_MODE_TORQUE_ONLY;
+    write.serial.axes.yaw_big_mode = s2c::com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
     write.serial.axes.yaw_big_target_position = 0.01 * static_cast<double>(iteration);
     write.serial.axes.yaw_big_target_velocity = 0.0f;
     write.serial.axes.yaw_big_torque = 0.0f;
-    write.serial.axes.roll_mode = s2c::com::mcu::AXIS_MODE_TORQUE_ONLY;
+    write.serial.axes.roll_mode = s2c::com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
     write.serial.axes.roll_target_position = 0.0f;
     write.serial.axes.roll_target_velocity = 0.0f;
     write.serial.axes.roll_torque = 0.0f;
-    write.serial.axes.yaw_small_mode = s2c::com::mcu::AXIS_MODE_TORQUE_ONLY;
+    write.serial.axes.yaw_small_mode = s2c::com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
     write.serial.axes.yaw_small_target_position = 0.0f;
     write.serial.axes.yaw_small_target_velocity = 0.0f;
     write.serial.axes.yaw_small_torque = 0.0f;
-    write.serial.axes.pitch_mode = s2c::com::mcu::AXIS_MODE_TORQUE_ONLY;
+    write.serial.axes.pitch_mode = s2c::com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
     write.serial.axes.pitch_target_position = 0.0f;
     write.serial.axes.pitch_target_velocity = 0.0f;
     write.serial.axes.pitch_torque = 0.0f;
