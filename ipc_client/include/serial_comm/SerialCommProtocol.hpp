@@ -238,22 +238,22 @@ struct SendPacket
     float   displacement_target_velocity_yaw;   // 底盘位移目标角速度 yaw（rad/s）
 
     // ── 大 yaw ──
-    uint8_t yaw_big_mode;               // AxisMode
+    uint8_t yaw_big_mode{AXIS_MODE_TORQUE_PLUS_PID};
     double  yaw_big_target_position;    // rad，多圈连续
     float   yaw_big_target_velocity;    // rad/s
     float   yaw_big_torque;             // N·m（前馈/纯力矩）
     // ── roll ──
-    uint8_t roll_mode;                  // AxisMode
+    uint8_t roll_mode{AXIS_MODE_TORQUE_PLUS_PID};
     float   roll_target_position;       // rad
     float   roll_target_velocity;       // rad/s
     float   roll_torque;                // N·m
     // ── 小 yaw ──
-    uint8_t yaw_small_mode;             // AxisMode
+    uint8_t yaw_small_mode{AXIS_MODE_TORQUE_PLUS_PID};
     float   yaw_small_target_position;  // rad
     float   yaw_small_target_velocity;  // rad/s
     float   yaw_small_torque;           // N·m
     // ── pitch ──
-    uint8_t pitch_mode;                 // AxisMode
+    uint8_t pitch_mode{AXIS_MODE_TORQUE_PLUS_PID};
     float   pitch_target_position;      // rad
     float   pitch_target_velocity;      // rad/s
     float   pitch_torque;               // N·m
