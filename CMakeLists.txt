@@ -24,7 +24,7 @@ endif()
 #                           serial_comm/SerialCommTypes.hpp、ipc/IpcLayout.hpp）也放在
 #                           ipc_client/include，本工程反向引用这些文件
 #   src/serial_comm_server.cpp : 串口通信服务端可执行程序入口
-#   tools/                : MCU/IMU 串口链路自检程序
+#   tools/                : MCU/IMU 串口链路自检程序与单轴力矩阶跃测试
 #
 # 依赖: SerialProtocol 用 libudev 读 USB iProduct 以筛选串口（需 libudev），
 #       并以 std::thread 做收发/重连线程（需 Threads）。
@@ -71,6 +71,13 @@ message(STATUS "s2c 动态库输出目录: ${CMAKE_BINARY_DIR}")
 add_executable(s2c_test_serial_mcu tools/test_serial_mcu.cpp)
 target_link_libraries(s2c_test_serial_mcu PRIVATE s2c)
 target_compile_options(s2c_test_serial_mcu PRIVATE -Wall -Wextra -Wpedantic)
+
+# ---------------------------------------------------------------------------
+# 单轴力矩阶跃测试（交互输入力矩值，100Hz 发送并统计实际力矩极值）
+# ---------------------------------------------------------------------------
+add_executable(s2c_test_serial_mcu_torque tools/test_serial_mcu_torque.cpp)
+target_link_libraries(s2c_test_serial_mcu_torque PRIVATE s2c)
+target_compile_options(s2c_test_serial_mcu_torque PRIVATE -Wall -Wextra -Wpedantic)
 
 # ---------------------------------------------------------------------------
 # IMU 串口链路自检（打印 IMU 数据并周期发送心跳）

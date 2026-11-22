@@ -166,22 +166,22 @@ int main() {
         packet.friction_wheel_enable = 0;
         packet.fire = 0;
         // ── 大 yaw：力矩与位置/速度内环模式 ──
-        packet.yaw_big_mode = com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
+        packet.yaw_big_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
         packet.yaw_big_target_position = 0.0;
         packet.yaw_big_target_velocity = 0.0f;
         packet.yaw_big_torque = 0.0f;
         // ── roll ──
-        packet.roll_mode = com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
+        packet.roll_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
         packet.roll_target_position = 0.0f;
         packet.roll_target_velocity = 0.0f;
         packet.roll_torque = 0.0f;
         // ── 小 yaw ──
-        packet.yaw_small_mode = com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
+        packet.yaw_small_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
         packet.yaw_small_target_position = 0.0f;
         packet.yaw_small_target_velocity = 0.0f;
         packet.yaw_small_torque = 0.0f;
         // ── pitch ──
-        packet.pitch_mode = com::mcu::AXIS_MODE_TORQUE_PLUS_PID;
+        packet.pitch_mode = com::mcu::AXIS_MODE_TORQUE_ONLY;
         packet.pitch_target_position = 0.0f;
         packet.pitch_target_velocity = 0.0f;
         packet.pitch_torque = 0.0f;
