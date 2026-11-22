@@ -283,16 +283,17 @@ void testMcuSendFrame() {
     packet.deform_control = 0x05;
     packet.displacement_target_velocity_x = 0.75f;
     packet.displacement_target_velocity_y = -1.5f;
+    packet.displacement_target_velocity_yaw = 0.25f;
 
     S2C_CHECK(serial.sendData(packet));
     const std::vector<uint8_t> sent =
         readWithTimeout(pty.master_fd, sizeof(packet), std::chrono::milliseconds(1000));
     S2C_CHECK(sent.size() == sizeof(packet));
-    S2C_CHECK(sizeof(packet) == 72);
+    S2C_CHECK(sizeof(packet) == 76);
     S2C_CHECK(sent[0] == 0x42);
     S2C_CHECK(sent[1] == 0x52);
     S2C_CHECK(sent[2] == com::mcu::PROTOCOL_VERSION);
-    S2C_CHECK(sent[3] == 67);
+    S2C_CHECK(sent[3] == 71);
     const uint8_t crc = com::CRC8_Check_Sum(sent.data(), sent.size() - 1);
     S2C_CHECK(sent.back() == crc);
     S2C_CHECK(std::memcmp(sent.data(),

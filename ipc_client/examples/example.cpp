@@ -61,6 +61,7 @@ NavWrite makeNavWrite(int iteration) {
     write.serial.deform_chassis.displacement_target_velocity_x =
         0.1f * static_cast<float>(iteration % 5);
     write.serial.deform_chassis.displacement_target_velocity_y = -0.05f;
+    write.serial.deform_chassis.displacement_target_velocity_yaw = 0.1f;
 
     write.nav_to_vision.auto_aim_mode = AutoAimMode::kArmor;
     write.nav_to_vision.suggested_target_id = 1;
@@ -96,6 +97,10 @@ void printInfo(const AllInfo& info) {
                 data.send_data.deform_chassis.deform_control,
                 data.send_data.axes.yaw_big_target_position,
                 static_cast<double>(data.send_data.axes.pitch_target_position));
+    std::printf("  send: vx=%.3f vy=%.3f wz=%.3f\n",
+                static_cast<double>(data.send_data.deform_chassis.displacement_target_velocity_x),
+                static_cast<double>(data.send_data.deform_chassis.displacement_target_velocity_y),
+                static_cast<double>(data.send_data.deform_chassis.displacement_target_velocity_yaw));
     std::printf("  mcu: mark=%u pitch=%.3f | imu: dt=%u\n",
                 data.mcu_data.mark,
                 static_cast<double>(data.mcu_data.pitch_position),

@@ -169,6 +169,7 @@ void testReceiveAndSend() {
     outgoing.deform_control = 0x0A;
     outgoing.displacement_target_velocity_x = 0.5f;
     outgoing.displacement_target_velocity_y = -0.25f;
+    outgoing.displacement_target_velocity_yaw = 0.125f;
     S2C_CHECK(comm.sendToMcu(outgoing));
 
     const std::vector<uint8_t> sent =
@@ -177,7 +178,7 @@ void testReceiveAndSend() {
     S2C_CHECK(sent.size() == sizeof(com::mcu::SendPacket));
     S2C_CHECK(sent[0] == 0x42);
     S2C_CHECK(sent[1] == 0x52);
-    S2C_CHECK(sent[3] == 67);
+    S2C_CHECK(sent[3] == 71);
     S2C_CHECK(sent.back() == com::CRC8_Check_Sum(sent.data(), sent.size() - 1));
 
     com::mcu::SendPacket sent_packet{};
@@ -189,6 +190,7 @@ void testReceiveAndSend() {
     S2C_CHECK(sent_packet.deform_control == 0x0A);
     S2C_CHECK(sent_packet.displacement_target_velocity_x == 0.5f);
     S2C_CHECK(sent_packet.displacement_target_velocity_y == -0.25f);
+    S2C_CHECK(sent_packet.displacement_target_velocity_yaw == 0.125f);
 
     // ── 发送 IMU 心跳: 前导 + data_size=0 + CRC32 ──
     com::imu::SendPacket heartbeat;

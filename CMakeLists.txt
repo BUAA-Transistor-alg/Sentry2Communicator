@@ -85,3 +85,10 @@ target_compile_options(s2c_test_serial_imu PRIVATE -Wall -Wextra -Wpedantic)
 add_executable(s2c_serial_comm_server src/serial_comm_server.cpp)
 target_link_libraries(s2c_serial_comm_server PRIVATE s2c)
 target_compile_options(s2c_serial_comm_server PRIVATE -Wall -Wextra -Wpedantic)
+
+# ---------------------------------------------------------------------------
+# 客户端工程（独立 CMake 工程）：作为子目录一起构建，使一份
+# compile_commands.json 同时覆盖主工程与 ipc_client 的全部源文件。
+# ipc_client 仍可脱离主工程单独 cmake 构建，产物在 ipc_client/build。
+# ---------------------------------------------------------------------------
+add_subdirectory(ipc_client)

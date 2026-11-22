@@ -64,6 +64,7 @@ struct DeformChassisData {
     uint8_t deform_control;                   // 变形控制位
     float   displacement_target_velocity_x;   // 底盘位移目标速度 x（m/s）
     float   displacement_target_velocity_y;   // 底盘位移目标速度 y（m/s）
+    float   displacement_target_velocity_yaw; // 底盘位移目标角速度 yaw (rad/s)
 };
 
 // ── 服务端维护的、要发送给串口的全部数据 ──
