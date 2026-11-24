@@ -16,6 +16,7 @@
 #include "common/FrameRateCounter.h"
 #include "ipc/IpcServer.hpp"
 #include "serial_comm/SerialCommTypes.hpp"
+#include "McuDataPreprocessor.h"
 
 #include <atomic>
 #include <cstdint>
@@ -79,6 +80,8 @@ private:
     std::thread send_thread_;
     std::atomic<bool> running_{false};
     std::atomic<bool> send_failed_{false};   // 发送线程异常退出标志
+
+    com::McuDataPreprocessor mcu_data_preprocessor;
 };
 
 }  // namespace serial_comm

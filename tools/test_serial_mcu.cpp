@@ -113,6 +113,8 @@ void printReferee(const com::mcu::ReceivePacket& packet) {
 }
 
 void onReceive(const com::mcu::ReceivePacket& packet) {
+    // 整帧的浮点字段统一按 6 位小数打印
+    std::cout << std::fixed << std::setprecision(6);
     std::cout << "\n[Received Packet]" << std::endl;
     std::cout << "  frame_header1:      0x" << std::hex << std::uppercase
               << static_cast<int>(packet.frame_header1) << std::dec << std::endl;
@@ -120,8 +122,7 @@ void onReceive(const com::mcu::ReceivePacket& packet) {
               << static_cast<int>(packet.frame_header2) << std::dec << std::endl;
     std::cout << "  protocol_version:   " << static_cast<int>(packet.protocol_version) << std::endl;
     std::cout << "  data_size:          " << static_cast<int>(packet.data_size) << std::endl;
-    std::cout << "  bullet_velocity:    " << std::fixed << std::setprecision(2)
-              << packet.bullet_velocity << " m/s" << std::endl;
+    std::cout << "  bullet_velocity:    " << packet.bullet_velocity << " m/s" << std::endl;
     printAxes(packet);
     std::cout << "  chassis_imu_yaw:    " << packet.chassis_imu_yaw << std::endl;
     std::cout << "  chassis_imu_omega:  " << packet.chassis_imu_omega << " rad/s" << std::endl;

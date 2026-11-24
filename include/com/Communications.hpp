@@ -123,7 +123,7 @@ public:
 
     // 发送 MCU 数据（发送前经预处理器，当前为原样返回）
     bool sendToMcu(mcu::SendPacket packet) {
-        mcu::SendPacket processed = McuDataPreprocessor::processSend(packet);
+        mcu::SendPacket processed = mcu_data_preprocessor.processSend(packet);
         return mcu_serial_.sendData(processed);
     }
 
@@ -146,7 +146,7 @@ private:
 
     void onMcuReceive(const mcu::ReceivePacket& packet) {
         // 原始包与处理后包在同一临界区内一起更新，保证 getLatestData() 拿到同一帧的配对
-        const mcu::ReceivePacket processed = McuDataPreprocessor::processReceive(packet);
+        const mcu::ReceivePacket processed = mcu_data_preprocessor.processReceive(packet);
         std::lock_guard<std::mutex> lock(mcu_mutex_);
         latest_mcu_raw_ = packet;
         latest_mcu_packet_ = processed;
@@ -165,6 +165,8 @@ private:
     // 串口对象最后声明：构造失败时先于互斥量与数据成员析构，接收线程先停止
     McuCommunication     mcu_serial_;
     ImuCommunication     imu_serial_;
+
+    McuDataPreprocessor mcu_data_preprocessor;
 };
 
 }  // namespace com

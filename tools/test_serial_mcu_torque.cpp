@@ -173,7 +173,7 @@ std::string trim(const std::string& text) {
 
 std::string formatTorque(float value) {
     std::ostringstream stream;
-    stream << std::fixed << std::setprecision(3) << value;
+    stream << std::fixed << std::setprecision(6) << value;
     return stream.str();
 }
 

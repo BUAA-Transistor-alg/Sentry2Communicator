@@ -7,17 +7,26 @@ namespace com {
 
 // ============================================================================
 // McuDataPreprocessor — MCU 收发数据预处理
-//
-// 当前阶段不做任何处理: 收发包原样返回。后续标定映射（编码器/指令 → 角度、
-// 电控单位换算、方向翻转等）在实现文件里加入，接口保持不变。
 // ============================================================================
 class McuDataPreprocessor {
 public:
     // ── 发送包预处理 ──
-    static mcu::SendPacket processSend(const mcu::SendPacket& packet);
+    mcu::SendPacket processSend(const mcu::SendPacket& packet);
 
     // ── 接收包预处理 ──
-    static mcu::ReceivePacket processReceive(const mcu::ReceivePacket& packet);
+    mcu::ReceivePacket processReceive(const mcu::ReceivePacket& packet);
+    
+    float small_yaw_offset = -0.546097f;
+
+    float max_big_yaw_torque = -6.561f;
+    float max_roll_torque = 6.640f;
+    float max_small_yaw_torque = 2.000f;
+    float max_pitch_torque = -3.992f;
+
+    float big_yaw_torque_receive_multiple = 8.0f;
+    float roll_torque_receive_multiple = 8.0f;
+    float small_yaw_torque_receive_multiple = 1.0f;
+    float pitch_torque_receive_multiple = 4.0f;
 };
 
 }  // namespace com

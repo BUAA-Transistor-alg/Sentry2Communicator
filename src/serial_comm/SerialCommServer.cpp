@@ -78,7 +78,7 @@ void SerialCommServer::stop() {
 
 void SerialCommServer::onMcuReceive(const com::mcu::ReceivePacket& packet) {
     std::lock_guard<std::mutex> lock(state_mutex_);
-    state_.mcu_packet = com::McuDataPreprocessor::processReceive(packet);
+    state_.mcu_packet = mcu_data_preprocessor.processReceive(packet);
     state_.last_mcu_receive_time = steadySeconds(std::chrono::steady_clock::now());
 }
 
@@ -163,7 +163,7 @@ void SerialCommServer::sendLoop() {
             info.server_info.last_imu_receive_time = state_.last_imu_receive_time;
             info.server_info.last_vision_write_time = state_.last_vision_write_time;
             info.server_info.last_nav_write_time = state_.last_nav_write_time;
-            processed = com::McuDataPreprocessor::processSend(packet);
+            processed = mcu_data_preprocessor.processSend(packet);
         }
 
         mcu_serial_.sendData(processed);
