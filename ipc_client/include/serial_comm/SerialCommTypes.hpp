@@ -61,7 +61,7 @@ struct AxisControlData {
 
 // ── 变形与底盘位移 ──
 struct DeformChassisData {
-    uint8_t deform_control;                   // 变形控制位
+    uint8_t deform_control;                   // 变形控制位：1 倒下 / 2 起立
     float   displacement_target_velocity_x;   // 底盘位移目标速度 x（m/s）
     float   displacement_target_velocity_y;   // 底盘位移目标速度 y（m/s）
     float   displacement_target_velocity_yaw; // 底盘位移目标角速度 yaw (rad/s)

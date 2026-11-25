@@ -196,7 +196,8 @@ static_assert(offsetof(SentryInfo, sentry_info_3) == 6, "0x020D 偏移变化");
 //   - 位置: 大 yaw 为 double（多圈连续语义，不限位），其余为 float（关节系弧度）
 //   - 模式位: 1 = 仅力矩、2 = 力矩 + 内环；其余任何取值（含 0）一律视为**非法模式**
 //     ⇒ 力矩按 0 处理（保守，见电控端实现）
-//   - 变形控制位（uint8_t）与底盘位移目标速度（x、y）是哨兵专有通道
+//   - 变形控制位（uint8_t，1 倒下 / 2 起立）与底盘位移目标速度（x、y、yaw）是哨兵专有通道
+//   - 云台控制权（uint8_t，接收包）：1 全部电控控制、2 交由上位机控制
 //   - pitch/roll 的"编码器/指令 → 角度"线性映射由上位机 McuDataPreprocessor 负责；
 //     当前阶段该预处理器原样返回，标定映射待后续实现；
 //     yaw 轴的角度换算（编码器计数 → 弧度、多圈累计）由电控完成
@@ -232,7 +233,7 @@ struct SendPacket
     uint8_t friction_wheel_enable;      // 摩擦轮开关
     uint8_t fire;                       // 火控
     // ── 变形与底盘位移 ──
-    uint8_t deform_control;                     // 变形控制位
+    uint8_t deform_control;                     // 变形控制位：1 倒下 / 2 起立
     float   displacement_target_velocity_x;     // 底盘位移目标速度 x（m/s）
     float   displacement_target_velocity_y;     // 底盘位移目标速度 y（m/s）
     float   displacement_target_velocity_yaw;   // 底盘位移目标角速度 yaw（rad/s）
@@ -265,7 +266,7 @@ struct ReceivePacket
     uint8_t frame_header1 = 0x42;
     uint8_t frame_header2 = 0x52;
     uint8_t protocol_version = PROTOCOL_VERSION;
-    uint8_t data_size = 237;
+    uint8_t data_size = 238;
     // ── 弹速/火控相关信息 ──
     float   bullet_velocity;            // m/s
     // ── 四个关节：位置 / 速度 / 实际使用的控制力矩 / 电机温度 ──
@@ -292,6 +293,7 @@ struct ReceivePacket
     uint8_t mark;                       // 递增标志位
     uint8_t color;                      // 颜色
     uint8_t auto_aim_switch;            // 电控自瞄开关
+    uint8_t gimbal_controllable;        // 云台控制权：1 全部电控控制 / 2 交由上位机控制
     // ── 裁判系统数据段（完整数据段，见 referee 命名空间）──
     referee::GameStatus            game_status;             // 0x0001
     referee::GameRobotHp           game_robot_hp;           // 0x0003
@@ -313,7 +315,7 @@ struct ReceivePacket
 // 编译期一致性检查（payload 长度必须与 data_size 一致）
 static_assert(sizeof(SendPacket) == 3 + 1 + 71 + 1,
               "SendPacket 布局与 data_size 不一致");
-static_assert(sizeof(ReceivePacket) == 3 + 1 + 237 + 1,
+static_assert(sizeof(ReceivePacket) == 3 + 1 + 238 + 1,
               "ReceivePacket 布局与 data_size 不一致");
 
 // 发送包关键字段偏移（电控侧应逐字段核对，避免静默错位）
@@ -338,20 +340,21 @@ static_assert(offsetof(ReceivePacket, yaw_small_position) == 38, "偏移变化")
 static_assert(offsetof(ReceivePacket, pitch_position) == 51, "偏移变化");
 static_assert(offsetof(ReceivePacket, chassis_imu_yaw) == 64, "偏移变化");
 static_assert(offsetof(ReceivePacket, mark) == 72, "偏移变化");
-static_assert(offsetof(ReceivePacket, game_status) == 75, "偏移变化");
-static_assert(offsetof(ReceivePacket, game_robot_hp) == 86, "偏移变化");
-static_assert(offsetof(ReceivePacket, event_data) == 110, "偏移变化");
-static_assert(offsetof(ReceivePacket, referee_warning) == 118, "偏移变化");
-static_assert(offsetof(ReceivePacket, dart_info) == 121, "偏移变化");
-static_assert(offsetof(ReceivePacket, robot_status) == 124, "偏移变化");
-static_assert(offsetof(ReceivePacket, power_heat_data) == 141, "偏移变化");
-static_assert(offsetof(ReceivePacket, robot_position) == 155, "偏移变化");
-static_assert(offsetof(ReceivePacket, buff) == 167, "偏移变化");
-static_assert(offsetof(ReceivePacket, hurt_data) == 174, "偏移变化");
-static_assert(offsetof(ReceivePacket, rfid_status) == 181, "偏移变化");
-static_assert(offsetof(ReceivePacket, ground_robot_position) == 187, "偏移变化");
-static_assert(offsetof(ReceivePacket, sentry_info) == 227, "偏移变化");
-static_assert(offsetof(ReceivePacket, crc8) == 241, "偏移变化");
+static_assert(offsetof(ReceivePacket, gimbal_controllable) == 75, "偏移变化");
+static_assert(offsetof(ReceivePacket, game_status) == 76, "偏移变化");
+static_assert(offsetof(ReceivePacket, game_robot_hp) == 87, "偏移变化");
+static_assert(offsetof(ReceivePacket, event_data) == 111, "偏移变化");
+static_assert(offsetof(ReceivePacket, referee_warning) == 119, "偏移变化");
+static_assert(offsetof(ReceivePacket, dart_info) == 122, "偏移变化");
+static_assert(offsetof(ReceivePacket, robot_status) == 125, "偏移变化");
+static_assert(offsetof(ReceivePacket, power_heat_data) == 142, "偏移变化");
+static_assert(offsetof(ReceivePacket, robot_position) == 156, "偏移变化");
+static_assert(offsetof(ReceivePacket, buff) == 168, "偏移变化");
+static_assert(offsetof(ReceivePacket, hurt_data) == 175, "偏移变化");
+static_assert(offsetof(ReceivePacket, rfid_status) == 182, "偏移变化");
+static_assert(offsetof(ReceivePacket, ground_robot_position) == 188, "偏移变化");
+static_assert(offsetof(ReceivePacket, sentry_info) == 228, "偏移变化");
+static_assert(offsetof(ReceivePacket, crc8) == 242, "偏移变化");
 
 } // namespace mcu
 

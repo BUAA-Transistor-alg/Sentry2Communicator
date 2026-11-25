@@ -17,7 +17,7 @@ using namespace s2c_test;
 
 com::mcu::ReceivePacket sampleMcuPacket(float pitch_position) {
     com::mcu::ReceivePacket packet{};
-    packet.data_size = 237;
+    packet.data_size = sizeof(com::mcu::ReceivePacket) - 3 - 1 - 1;
     packet.bullet_velocity = 15.5f;
     packet.yaw_big_position = 2.5;
     packet.yaw_big_velocity = -1.25f;
@@ -40,6 +40,7 @@ com::mcu::ReceivePacket sampleMcuPacket(float pitch_position) {
     packet.mark = 5;
     packet.color = 1;
     packet.auto_aim_switch = 1;
+    packet.gimbal_controllable = 2;
     // 裁判系统数据段样例
     packet.game_status.game_type = 1;
     packet.game_status.game_progress = 4;
@@ -81,7 +82,7 @@ void testMcuReceiveValidFrame() {
     S2C_CHECK(waitFor([&] { return sink.size() >= 1; }, std::chrono::milliseconds(1000)));
 
     const com::mcu::ReceivePacket received = sink.at(0);
-    S2C_CHECK(received.data_size == 237);
+    S2C_CHECK(received.data_size == sizeof(com::mcu::ReceivePacket) - 3 - 1 - 1);
     S2C_CHECK(received.bullet_velocity == 15.5f);
     // 四个关节
     S2C_CHECK(received.yaw_big_position == 2.5);
@@ -106,6 +107,7 @@ void testMcuReceiveValidFrame() {
     S2C_CHECK(received.mark == 5);
     S2C_CHECK(received.color == 1);
     S2C_CHECK(received.auto_aim_switch == 1);
+    S2C_CHECK(received.gimbal_controllable == 2);
     // 裁判系统数据段
     S2C_CHECK(received.game_status.game_type == 1);
     S2C_CHECK(received.game_status.game_progress == 4);

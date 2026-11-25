@@ -129,6 +129,7 @@ void onReceive(const com::mcu::ReceivePacket& packet) {
     std::cout << "  mark:               " << static_cast<int>(packet.mark) << std::endl;
     std::cout << "  color:              " << static_cast<int>(packet.color) << std::endl;
     std::cout << "  auto_aim_switch:    " << static_cast<int>(packet.auto_aim_switch) << std::endl;
+    std::cout << "  gimbal_controllable:" << static_cast<int>(packet.gimbal_controllable) << std::endl;
     printReferee(packet);
     std::cout << "  crc8:               0x" << std::hex << std::uppercase
               << static_cast<int>(packet.crc8) << std::dec << std::endl;

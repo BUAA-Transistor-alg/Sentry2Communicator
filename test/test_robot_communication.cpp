@@ -21,7 +21,7 @@ using namespace s2c_test;
 
 com::mcu::ReceivePacket sampleRawMcuPacket() {
     com::mcu::ReceivePacket packet{};
-    packet.data_size = 237;
+    packet.data_size = sizeof(com::mcu::ReceivePacket) - 3 - 1 - 1;
     packet.bullet_velocity = 12.0f;
     packet.pitch_position = 32780.0f;   // 关节角 0 对应的原始读数
     packet.pitch_velocity = 5.0f;
@@ -44,6 +44,7 @@ com::mcu::ReceivePacket sampleRawMcuPacket() {
     packet.mark = 11;
     packet.color = 1;
     packet.auto_aim_switch = 1;
+    packet.gimbal_controllable = 2;
     // 裁判系统数据段样例
     packet.game_status.game_progress = 4;
     packet.game_status.stage_remain_time = 200;
@@ -135,6 +136,7 @@ void testReceiveAndSend() {
     S2C_CHECK(data.mcu_packet.chassis_imu_yaw == 0.5f);
     S2C_CHECK(data.mcu_packet.bullet_velocity == 12.0f);
     S2C_CHECK(data.mcu_packet.mark == 11);
+    S2C_CHECK(data.mcu_packet.gimbal_controllable == 2);
     // 裁判系统数据段原样透传
     S2C_CHECK(data.mcu_packet.game_status.game_progress == 4);
     S2C_CHECK(data.mcu_packet.game_status.stage_remain_time == 200);

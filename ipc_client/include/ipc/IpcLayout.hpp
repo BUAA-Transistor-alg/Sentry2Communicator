@@ -34,7 +34,7 @@ constexpr uint32_t kQueueCapacity = 128;   // 请求队列容量
 constexpr uint64_t kMagic   = 0x5345433249504331ULL;  // "SEC2IPC1"
 // 共享内存布局版本：kChannelCount / kMaxPayload 等布局参数变化时递增；
 // SerialCommTypes.hpp 中内容结构体的字段布局变化时也必须递增
-constexpr uint32_t kVersion = 5;
+constexpr uint32_t kVersion = 6;
 
 // 服务端状态（写在共享内存头部，客户端据此判断能否使用该段）
 enum class ServerState : uint32_t {

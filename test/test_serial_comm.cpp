@@ -192,7 +192,7 @@ serial_comm::NavWrite makeInitialNavWrite() {
 
 com::mcu::ReceivePacket makeMcuSample() {
     com::mcu::ReceivePacket packet{};
-    packet.data_size = 237;
+    packet.data_size = sizeof(com::mcu::ReceivePacket) - 3 - 1 - 1;
     packet.bullet_velocity = 12.5f;
     packet.yaw_big_position = 1.5;
     packet.yaw_big_velocity = 0.25f;
@@ -215,6 +215,7 @@ com::mcu::ReceivePacket makeMcuSample() {
     packet.mark = 9;
     packet.color = 1;
     packet.auto_aim_switch = 1;
+    packet.gimbal_controllable = 1;
     packet.robot_status.current_HP = 250;
     return packet;
 }
@@ -393,6 +394,7 @@ int main() {
             && info.server_info.last_mcu_receive_time > 0.0
             && info.server_info.last_imu_receive_time > 0.0
             && info.mcu_data.mark == mcu_sample.mark
+            && info.mcu_data.gimbal_controllable == mcu_sample.gimbal_controllable
             && info.imu_data.dt_one_tenth_ms == imu_sample.dt_one_tenth_ms;
     }, std::chrono::milliseconds(2000)));
     // 帧尾 CRC 字段由串口链路填写，比较时排除
